@@ -22,6 +22,8 @@ _indexes = xw.Book('ipca.xlsx').sheets('indexes') \
                                                     index=False).value
 _items = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 4)]
 
+_groups = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
+
 
 # help functions
 def decomp(df, category, dat):
@@ -177,6 +179,27 @@ def difusao(dipca, dat):
     return obs.map(lambda x: 1.0 if x > 0 else 0).mean()
 
 
+def groups(dipca, dat):
+    """
+    takes the ipca database and the date and
+    returns the difusion index for that date
+    input:
+    -----
+    - dipca: dataframe
+    - dat: date (%Y-%m-%d)
+    output:
+    ------
+    - list
+    """
+    groups = list(_groups.loc[:, 'index'].values)
+    dv = pd.DataFrame(dipca.ix[dat]['mom'].loc[groups]).T
+    dv.index = [dat]
+    dv.columns = ['Foods', "Residence", "Residencial Articles",
+                                          "Clothing", "Transport", "Health",
+                                          "Personal Items", "Education", "Communication"]
+    return dv
+
+
 # consolidado
 def decomposition(dipca, dat):
     '''
@@ -195,6 +218,8 @@ def decomposition(dipca, dat):
     names = ['ipca', 'servicos', 'nucleo - servicos', 'duraveis', 'nduraveis',
              'monitorados', 'livres', 'comercializaveis',
              'ncomercializaveis', "core_ex2", "core_ma", "core_dp"]
-    return pd.DataFrame(np.array([np.round(c(dipca, dat),
-                                           2) for c in consolidado]).reshape(1, len(names)),
-                        index=[dat], columns=names)
+    df = pd.DataFrame(np.array([np.round(c(dipca, dat),
+                                         2) for c in consolidado]).reshape(1, len(names)),
+                      index=[dat], columns=names)
+    dfinal = pd.merge(df, groups(dipca, dat), left_index=True, right_index=True, how="inner")
+    return dfinal
