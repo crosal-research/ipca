@@ -1,4 +1,4 @@
-# coding: utf-8
+# coding: iso-8859-1
 
 ######################################################################
 # decomposion of ipca into its differents subcomponents
@@ -131,32 +131,34 @@ def core_ex2(dipca, dat):
 
 def core_ma(dipca, dat):
     items = list(_items.loc[:, 'index'].values)
-    cpi = dipca.loc[dat].loc[items].sort(['mom'])
+    cpi = dipca.ix[dat].loc[items].sort_values(by='mom')
     cpi['peso'] = cpi['peso'].cumsum()
     indexes = cpi[(cpi['peso'] >= 20) & (cpi['peso'] <=80)].index
     return decomp(dipca, indexes, dat)
-    
+
 
 def core_dp(dipca, dat):
     if dat < "2015-01-01":
         return np.NaN
     items = list(_items.loc[:, 'index'].values)
-    dat_ipca = dipca.loc[dat].loc[items]
+    dat_ipca = dipca.ix[dat].loc[items]
     d = datetime.strptime(dat, "%Y-%m-%d")
+    global begin
     begin = d + DateOffset(years=-4) #intial period std
+    global end
     end = d + DateOffset(months=-1)  # final period for std
-    # recalculate weigths
-    sipca = dipca.swaplevel(0,1).loc[items]['mom'].unstack(0).loc[begin:end]
-    obs = dipca.swaplevel(0,1).loc[7169]["mom"].loc[begin:end]
+    # recalculate weights
+    sipca = dipca.swaplevel(0,1).sort_index(inplace=False).loc[items]['mom'].unstack(0).loc[begin:end]
+    obs = dipca.swaplevel(0,1).sort_index(inplace=False).loc[7169]["mom"].loc[begin:end]
     net = sipca.subtract(obs, axis="index")
     std = 1/net.std()
     sm_std = std/std.sum()*100
     new_std = sm_std*(dat_ipca["peso"].sort_index())
     new_sm = new_std /(new_std.sum())*100
-    # calculate de final 
+    # calculate de final
     return np.average(dat_ipca["mom"].sort_index(), weights=new_sm)
 
-    
+
 def difusao(dipca, dat):
     """
     takes the ipca database and the date and
@@ -173,7 +175,7 @@ def difusao(dipca, dat):
     items = list(_items.loc[:, 'index'].values)
     obs = dipca.loc[dat]["mom"].loc[items]
     return obs.map(lambda x: 1.0 if x > 0 else 0).mean()
-    
+
 
 # consolidado
 def decomposition(dipca, dat):
@@ -181,7 +183,7 @@ def decomposition(dipca, dat):
     return a list with inflation components
     input:
     -----
-    - dipca: multiindex panda dataframe 
+    - dipca: multiindex panda dataframe
     - dat: str (date to calculate cores)
     ouput:
     -----
