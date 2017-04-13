@@ -60,7 +60,6 @@ def consolidate(dates):
             dnew = decomposition(dipca, d)
             df_final = pd.concat([df_final, dnew], join='inner')
             df_final.index.name = 'date'
-    xw.Book('ipca.xlsx').sheets('nucleos').range('a1').value = df_final
+            xw.Book('ipca.xlsx').sheets('nucleos').range('a1').value = df_final
     
-
 

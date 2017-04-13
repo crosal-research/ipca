@@ -9,8 +9,9 @@ from consolidate import consolidate
 wb = xw.Book('ipca.xlsx')
 dates = map(lambda x: int(x), wb.sheets('Dates').range("a1").expand().value)
 
-for d in dates:
-    update_db('ipca.xlsx', d)
+# for d in dates:
+#     update_db('ipca.xlsx', d)
 
+update_db('ipca.xlsx', dates[-1])    
 
 consolidate(dates)

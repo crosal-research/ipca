@@ -4,33 +4,37 @@
 ######################################################################
 import pandas as pd
 import xlwings as xw
+import requests
+from concurrent import futures
+import time
+
 
 
 __all__ = ['update_db']
 
 
-def _fetch_data(serie, period):
+_series ={'mom': 355, 'peso': 357}
+_table = 1705  #ipca-15
+
+def _parse_data(resp):
     '''
     fetch the appropriated data about ipca from the ibge, by building
     the ibge's api url
     input:
     ----
-    - series: str(int) - code from ibge's api (ex: 63 fr mom or 66 for weight)
-    - period: str
+    - resp: requests respose 
     output:
     ------
     - dataframe
     '''
-    address = "http://api.sidra.ibge.gov.br/values/t/1419" + \
-              "/p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(period, serie)
-    df = pd.read_json(address).loc[:, ['D1C', 'D3C', 'V']]
-    p = pd.to_datetime(period, format="%Y%m").strftime(format="%Y-%m-%d")
+    df = pd.read_json(resp.content).loc[:, ['D1C', 'D3C', 'V']]
+    p = pd.to_datetime(df.D1C.unique(),format="%Y%m")
     df_new = pd.DataFrame(df[["V"]].values, index=df["D3C"].T.values, columns=[p])
     df_new.index.name = 'date'
     return df_new
 
 
-def _fetch_ipca(info, period):
+def _fetch_ipca(period):
     """
     Hellp function. Given a period, fetches all ipca itmes mom changes and weights
     of that period.
@@ -42,9 +46,21 @@ def _fetch_ipca(info, period):
     ------
     - dataframe
     """
-    if info == 'mom':
-        return _fetch_data(63, period)
-    return _fetch_data(66, period)
+    session = requests.Session()
+    session.mount("http://api.sidra.ibge.gov.br/values/t/1419",  
+                  requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=2))
+    series ={'mom': 63, 'peso': 66}
+
+    address_mom = "http://api.sidra.ibge.gov.br/values/" + \
+               "t/{}/p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(_table, period, _series['mom'])
+    address_peso = "http://api.sidra.ibge.gov.br/values/" + \
+                "t/{}//p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(_table, period, _series['peso'])
+
+    executor = futures.ThreadPoolExecutor(max_workers=2)
+    resps = executor.map(session.get, [address_mom, address_peso])
+    session.close()
+    ddfs = map(_parse_data, resps)
+    return {'mom': ddfs[0], 'peso':ddfs[1]}
 
 
 def update_db(dat_file, dat):
@@ -53,30 +69,40 @@ def update_db(dat_file, dat):
     that's not yet in the db and saves it
     input:
     -----
-    - data_file: stro
+    - data_file: str
     - info: str
     - dat: str (ex: all, 201612)
-    oupt:
+    output:
     - side effect
-    Nota: falta manter formato da data em strings no arquivo excel quanto saver l
     """
     wb = xw.Book(dat_file)
-    for info in ['mom', 'peso']:
-        d = pd.to_datetime(dat, format="%Y%m").strftime(format="%Y-%m-%d")
-        global df
-        df = wb.sheets(info).range('a1').options(pd.DataFrame, expand='table').value
-        df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
-        if not (d in df.columns):
+    d = pd.to_datetime(dat, format="%Y%m").strftime(format="%Y-%m-%d")
+    dmom =  wb.sheets('mom').range('a1').options(pd.DataFrame, expand='table').value
+    dpeso = wb.sheets('peso').range('a1').options(pd.DataFrame, expand='table').value
+    ddobs = {'mom': dmom, 'peso': dpeso}
+    if not (d in dmom.columns):
+        att = 0
+        while (True and (att <= 10)):
             try:
-                dnew = _fetch_ipca(info, dat)
+                ddfs = _fetch_ipca(dat)
                 print "New Data ({}) is available".format(dat)
             except:
-                print "New Data {} is not yet available".format(dat)
+                att += 1
+                print "New Data ({}) is not yet available in attempt {}".format(dat, att)
+                time.sleep(0.2)
             else:
-                df = pd.merge(df, dnew, left_index=True, right_index=True, how='outer')
-                df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
-                df.sort_index(axis=1)
-                wb.sheets(info).range('a1').value = df
+                for info in ['mom', 'peso']:
+                    df = ddobs[info]
+                    dnew = ddfs[info]
+                    df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
+                    df = pd.merge(ddobs[info], ddfs[info], left_index=True, right_index=True, how='outer')
+                    df.columns = pd.to_datetime(map(lambda x: str(x), 
+                                                df.columns), format="%Y-%m-%d")
+                    df.sort_index(axis=1)
+                    wb.sheets(info).range('a1').value = df
+                break
+    else:
+        print "data for ({}) is already in the database".format(d)
         
     
                 
