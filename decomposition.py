@@ -173,10 +173,10 @@ def difusao(dipca, dat):
     ------
     - double
     """
-    global items
+    global items, obs
     items = list(_items.loc[:, 'index'].values)
-    obs = dipca.loc[dat]["mom"].loc[items]
-    return obs.map(lambda x: 1.0 if x > 0 else 0).mean()
+    obs = dipca.loc[dat]["mom"].unstack()[items].T
+    return obs[dat].apply(lambda x: 1.0 if x > 0 else 0).mean()
 
 
 def groups(dipca, dat):
@@ -201,6 +201,7 @@ def groups(dipca, dat):
 
 
 # consolidado
+
 def decomposition(dipca, dat):
     '''
     return a list with inflation components
@@ -212,12 +213,13 @@ def decomposition(dipca, dat):
     -----
     - list(double)
     '''
+    global names
     consolidado = [_ipca, serv, serv_core, duraveis, nduraveis,
                    monitorados, livres, comercializaveis,
-                   ncomercializaveis, core_ex2, core_ma, core_dp]
+                   ncomercializaveis, core_ex2, core_ma, core_dp, difusao]
     names = ['ipca', 'servicos', 'nucleo - servicos', 'duraveis', 'nduraveis',
              'monitorados', 'livres', 'comercializaveis',
-             'ncomercializaveis', "core_ex2", "core_ma", "core_dp"]
+             'ncomercializaveis', "core_ex2", "core_ma", "core_dp", "difusao"]
     df = pd.DataFrame(np.array([np.round(c(dipca, dat),
                                          2) for c in consolidado]).reshape(1, len(names)),
                       index=[dat], columns=names)

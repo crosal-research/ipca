@@ -57,6 +57,7 @@ def consolidate(dates):
     for dat in dates:
         d = pd.to_datetime(dat, format="%Y%m").strftime("%Y-%m-%d")
         if not d in df.index:
+            global dnew
             dnew = decomposition(dipca, d)
             df_final = pd.concat([df_final, dnew], join='inner')
             df_final.index.name = 'date'

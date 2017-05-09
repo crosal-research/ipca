@@ -15,3 +15,4 @@ dates = map(lambda x: int(x), wb.sheets('Dates').range("a1").expand().value)
 update_db('ipca.xlsx', dates[-1])    
 
 consolidate(dates)
+
