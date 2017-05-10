@@ -13,8 +13,11 @@ import time
 __all__ = ['update_db']
 
 
-_series ={'mom': 355, 'peso': 357}
-_table = 1705  #ipca-15
+_series ={'mom': 63, 'peso': 66} #ipca
+_table = 1419 #ipca
+
+#_series ={'mom': 355, 'peso': 357} #ipca-15
+#_table = 1705  #ipca-15
 
 def _parse_data(resp):
     '''
@@ -22,7 +25,7 @@ def _parse_data(resp):
     the ibge's api url
     input:
     ----
-    - resp: requests respose 
+    - resp: requests response
     output:
     ------
     - dataframe
@@ -47,19 +50,17 @@ def _fetch_ipca(period):
     - dataframe
     """
     session = requests.Session()
-    session.mount("http://api.sidra.ibge.gov.br/values/t/1419",  
+    session.mount("http://api.sidra.ibge.gov.br/values/t/1419",
                   requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=2))
-    series ={'mom': 63, 'peso': 66}
-
     address_mom = "http://api.sidra.ibge.gov.br/values/" + \
                "t/{}/p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(_table, period, _series['mom'])
     address_peso = "http://api.sidra.ibge.gov.br/values/" + \
-                "t/{}//p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(_table, period, _series['peso'])
+                "t/{}/p/{}/v/{}/c315/all/h/n/n1/1/f/a".format(_table, period, _series['peso'])
 
     executor = futures.ThreadPoolExecutor(max_workers=2)
     resps = executor.map(session.get, [address_mom, address_peso])
     session.close()
-    ddfs = map(_parse_data, resps)
+    ddfs = [_parse_data(r) for r in resps]
     return {'mom': ddfs[0], 'peso':ddfs[1]}
 
 
@@ -94,15 +95,14 @@ def update_db(dat_file, dat):
                 for info in ['mom', 'peso']:
                     df = ddobs[info]
                     dnew = ddfs[info]
-                    df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
+                    #df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
+                    df.columns = pd.to_datetime([pd.to_datetime(x) for x in df.columns])
                     df = pd.merge(ddobs[info], ddfs[info], left_index=True, right_index=True, how='outer')
-                    df.columns = pd.to_datetime(map(lambda x: str(x), 
-                                                df.columns), format="%Y-%m-%d")
+                    # df.columns = pd.to_datetime(map(lambda x: str(x),
+                    #                             df.columns), format="%Y-%m-%d")
+                    df.columns = pd.to_datetime([str(x) for x in df.columns], format="%Y-%m-%d")
                     df.sort_index(axis=1)
                     wb.sheets(info).range('a1').value = df
                 break
     else:
         print "data for ({}) is already in the database".format(d)
-        
-    
-                

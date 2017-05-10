@@ -22,6 +22,8 @@ _indexes = xw.Book('ipca.xlsx').sheets('indexes') \
                                                     index=False).value
 _items = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 4)]
 
+_subitems = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) > 4)]
+
 _groups = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
 
 
@@ -145,9 +147,7 @@ def core_dp(dipca, dat):
     items = list(_items.loc[:, 'index'].values)
     dat_ipca = dipca.ix[dat].loc[items]
     d = datetime.strptime(dat, "%Y-%m-%d")
-    global begin
     begin = d + DateOffset(years=-4) #intial period std
-    global end
     end = d + DateOffset(months=-1)  # final period for std
     # recalculate weights
     sipca = dipca.swaplevel(0,1).sort_index(inplace=False).loc[items]['mom'].unstack(0).loc[begin:end]
@@ -174,8 +174,8 @@ def difusao(dipca, dat):
     - double
     """
     global items, obs
-    items = list(_items.loc[:, 'index'].values)
-    obs = dipca.loc[dat]["mom"].unstack()[items].T
+    subitems = list(_subitems.loc[:, 'index'].values)
+    obs = dipca.loc[dat]["mom"].unstack()[subitems].T
     return obs[dat].apply(lambda x: 1.0 if x > 0 else 0).mean()
 
 
