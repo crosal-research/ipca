@@ -24,6 +24,7 @@ _items = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) 
 
 _subitems = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) > 4)]
 
+
 _groups = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
 
 
@@ -173,7 +174,6 @@ def difusao(dipca, dat):
     ------
     - double
     """
-    global items, obs
     subitems = list(_subitems.loc[:, 'index'].values)
     obs = dipca.loc[dat]["mom"].unstack()[subitems].T
     return obs[dat].apply(lambda x: 1.0 if x > 0 else 0).mean()
@@ -213,7 +213,6 @@ def decomposition(dipca, dat):
     -----
     - list(double)
     '''
-    global names
     consolidado = [_ipca, serv, serv_core, duraveis, nduraveis,
                    monitorados, livres, comercializaveis,
                    ncomercializaveis, core_ex2, core_ma, core_dp, difusao]
@@ -225,3 +224,4 @@ def decomposition(dipca, dat):
                       index=[dat], columns=names)
     dfinal = pd.merge(df, groups(dipca, dat), left_index=True, right_index=True, how="inner")
     return dfinal
+
