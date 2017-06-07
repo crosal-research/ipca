@@ -79,7 +79,9 @@ def update_db(dat_file, dat):
     wb = xw.Book(dat_file)
     d = pd.to_datetime(dat, format="%Y%m").strftime(format="%Y-%m-%d")
     dmom =  wb.sheets('mom').range('a1').options(pd.DataFrame, expand='table').value
+    dmom.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), dmom.columns))
     dpeso = wb.sheets('peso').range('a1').options(pd.DataFrame, expand='table').value
+    dpeso.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), dpeso.columns))
     ddobs = {'mom': dmom, 'peso': dpeso}
     if not (d in dmom.columns):
         att = 0
@@ -98,8 +100,8 @@ def update_db(dat_file, dat):
                     df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
                     #df.columns = pd.to_datetime([pd.to_datetime(x) for x in df.columns])
                     df = pd.merge(ddobs[info], ddfs[info], left_index=True, right_index=True, how='outer')
-                    df.columns = pd.to_datetime(map(lambda x: str(x), df.columns), format="%Y-%m-%d")
-                    #df.columns = pd.to_datetime([str(x) for x in df.columns], format="%Y-%m-%d")
+                    # df.columns = pd.to_datetime(map(lambda x: str(x), df.columns), format="%Y-%m-%d")
+                    df.columns = pd.to_datetime([str(x) for x in df.columns], format="%Y-%m-%d")
                     df.sort_index(axis=1)
                     wb.sheets(info).range('a1').value = df
                 break

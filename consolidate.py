@@ -32,6 +32,7 @@ def _build_ipca(file_name):
     dpeso = pd.DataFrame(dp.replace('...', np.NaN).stack().swaplevel(0, 1))
     dpeso.index.levels[0].name = 'Date'
     dpeso.index.levels[1].name = 'items'
+
     dipca = pd.merge(dmom, dpeso, left_index=True, right_index=True, how='inner')
     dipca.columns = ['mom', 'peso']
     dipca.sort_index(inplace=True)

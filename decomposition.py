@@ -135,11 +135,12 @@ def core_ex2(dipca, dat):
 
 
 def core_ma(dipca, dat):
+    global cpi, indexes
     items = list(_items.loc[:, 'index'].values)
-    cpi = dipca.ix[dat].loc[items].sort_values(by='mom')
-    cpi['peso'] = cpi['peso'].cumsum()
-    indexes = cpi[(cpi['peso'] >= 20) & (cpi['peso'] <=80)].index
-    return decomp(dipca, indexes, dat)
+    cpi = dipca.ix[dat].loc[items].sort_values(by='mom', ascending=False)
+    cpi['cum'] = cpi['peso'].cumsum()
+    indexes = cpi[(cpi['cum'] >= 20.0) & (cpi['cum'] <= 80.0)].index
+    return decomp(dipca, indexes, dat)*(cpi['peso'][indexes].sum())/60
 
 
 def core_dp(dipca, dat):
@@ -162,6 +163,7 @@ def core_dp(dipca, dat):
     return np.average(dat_ipca["mom"].sort_index(), weights=new_sm)
 
 
+
 def difusao(dipca, dat):
     """
     takes the ipca database and the date and
@@ -174,7 +176,9 @@ def difusao(dipca, dat):
     ------
     - double
     """
-    subitems = list(_subitems.loc[:, 'index'].values)
+    global obs, di
+#    subitems = [np.round(x,0) for x in (_subitems.loc[:, 'index'].values)]
+    subitems = _subitems['index'].values
     obs = dipca.loc[dat]["mom"].unstack()[subitems].T
     return obs[dat].apply(lambda x: 1.0 if x > 0 else 0).mean()
 
@@ -201,7 +205,6 @@ def groups(dipca, dat):
 
 
 # consolidado
-
 def decomposition(dipca, dat):
     '''
     return a list with inflation components
