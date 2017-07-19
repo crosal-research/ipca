@@ -13,11 +13,11 @@ import time
 __all__ = ['update_db']
 
 
-_series ={'mom': 63, 'peso': 66} #ipca
-_table = 1419 #ipca
+#_series ={'mom': 63, 'peso': 66} #ipca
+#_table = 1419 #ipca
 
-#_series ={'mom': 355, 'peso': 357} #ipca-15
-#_table = 1705  #ipca-15
+_series ={'mom': 355, 'peso': 357} #ipca-15
+_table = 1705  #ipca-15
 
 def _parse_data(resp):
     '''

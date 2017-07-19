@@ -27,6 +27,8 @@ _subitems = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0
 
 _groups = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
 
+_smooth = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
+
 
 # help functions
 def decomp(df, category, dat):
@@ -93,7 +95,6 @@ def duraveis(dipca, dat):
     return decomp(dipca, dec, dat)
 
 
-
 def nduraveis(dipca, dat):
     dec = _decompo['nao-duraveis'].dropna().values
     return decomp(dipca, dec, dat)
@@ -135,12 +136,33 @@ def core_ex2(dipca, dat):
 
 
 def core_ma(dipca, dat):
-    global cpi, indexes
+    input_ipca = dipca.copy()
     items = list(_items.loc[:, 'index'].values)
-    cpi = dipca.ix[dat].loc[items].sort_values(by='mom', ascending=False)
+    cpi = input_ipca.ix[dat].loc[items]
+    cpi = input_ipca.ix[dat].loc[items].sort_values(by='mom', ascending=True)
     cpi['cum'] = cpi['peso'].cumsum()
     indexes = cpi[(cpi['cum'] >= 20.0) & (cpi['cum'] <= 80.0)].index
-    return decomp(dipca, indexes, dat)*(cpi['peso'][indexes].sum())/60
+    index_inf = cpi.index.get_loc(indexes[0])-1
+    diff_inf = 20 - cpi.iloc[index_inf]['cum'] 
+    index_sup = cpi.index.get_loc(indexes[-1]) + 1
+    diff_sup = 60 - (cpi.loc[indexes]['peso'].sum()  -  diff_inf)
+    input_ipca.loc[dat, indexes[0]]['peso'] =  input_ipca.loc[dat, indexes[0]]['peso'] - diff_inf
+    input_ipca.loc[dat, indexes[-1]]['peso'] =  input_ipca.loc[dat, indexes[-1]]['peso'] + diff_sup
+    return decomp(input_ipca, indexes, dat)
+    
+
+def core_smooth(dipca, dat):
+    global indexes, dr
+    if dat < "2012-12-01":
+        return np.NaN
+    sm_dipca = dipca.copy()
+    indexes = _decompo['suavizados'].dropna().values
+    ds = dipca.loc[(slice(None), indexes),:].unstack()
+    dr = ds.loc[:,'mom'].rolling(window=12).apply(lambda x: (np.prod(1+x/100)))
+    dmom = pd.DataFrame(((dr.applymap(lambda x: (x-1)/12))*100).stack(), columns = ['mom'])
+    for ind in indexes:
+        sm_dipca.loc[(slice('2012-12-01',dat), ind), 'mom'] = dmom.loc[(slice('2012-12-01', dat), ind), 'mom'].values
+    return core_ma(sm_dipca,dat)
 
 
 def core_dp(dipca, dat):
@@ -179,7 +201,8 @@ def difusao(dipca, dat):
     global obs, di
 #    subitems = [np.round(x,0) for x in (_subitems.loc[:, 'index'].values)]
     subitems = _subitems['index'].values
-    obs = dipca.loc[dat]["mom"].unstack()[subitems].T
+    obs = dipca.loc[(dat, subitems), 'mom']
+    #obs = dipca.loc[dat]["mom"].unstack()[subitems].T
     return obs[dat].apply(lambda x: 1.0 if x > 0 else 0).mean()
 
 
@@ -218,10 +241,10 @@ def decomposition(dipca, dat):
     '''
     consolidado = [_ipca, serv, serv_core, duraveis, nduraveis,
                    monitorados, livres, comercializaveis,
-                   ncomercializaveis, core_ex2, core_ma, core_dp, difusao]
+                   ncomercializaveis, core_ex2, core_ma, core_dp, core_smooth, difusao]
     names = ['ipca', 'servicos', 'nucleo - servicos', 'duraveis', 'nduraveis',
              'monitorados', 'livres', 'comercializaveis',
-             'ncomercializaveis', "core_ex2", "core_ma", "core_dp", "difusao"]
+             'ncomercializaveis', "core_ex2", "core_ma", "core_dp", "core_smooth", "difusao"]
     df = pd.DataFrame(np.array([np.round(c(dipca, dat),
                                          2) for c in consolidado]).reshape(1, len(names)),
                       index=[dat], columns=names)
