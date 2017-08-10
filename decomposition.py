@@ -153,7 +153,7 @@ def core_ma(dipca, dat):
 
 def core_smooth(dipca, dat):
     global indexes, dr
-    if dat < "2012-12-01":
+    if dat < "2013-01-01":
         return np.NaN
     sm_dipca = dipca.copy()
     indexes = _decompo['suavizados'].dropna().values
@@ -161,7 +161,7 @@ def core_smooth(dipca, dat):
     dr = ds.loc[:,'mom'].rolling(window=12).apply(lambda x: (np.prod(1+x/100)))
     dmom = pd.DataFrame(((dr.applymap(lambda x: (x-1)/12))*100).stack(), columns = ['mom'])
     for ind in indexes:
-        sm_dipca.loc[(slice('2012-12-01',dat), ind), 'mom'] = dmom.loc[(slice('2012-12-01', dat), ind), 'mom'].values
+        sm_dipca.loc[(slice('2013-01-01',dat), ind), 'mom'] = dmom.loc[(slice('2013-01-01', dat), ind), 'mom'].values
     return core_ma(sm_dipca,dat)
 
 
