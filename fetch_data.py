@@ -50,6 +50,7 @@ def _fetch_ipca(period):
     - dataframe
     """
     session = requests.Session()
+    session.proxies = {'http': 'spoflpxy0001:8080'}
     session.mount("http://api.sidra.ibge.gov.br/values/t/1419",
                   requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=2))
     address_mom = "http://api.sidra.ibge.gov.br/values/" + \
@@ -79,25 +80,25 @@ def update_db(dat_file, dat):
     wb = xw.Book(dat_file)
     d = pd.to_datetime(dat, format="%Y%m").strftime(format="%Y-%m-%d")
     dmom =  wb.sheets('mom').range('a1').options(pd.DataFrame, expand='table').value
-    dmom.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), dmom.columns))
+    dmom.columns = pd.to_datetime(list(map(lambda x: pd.to_datetime(x), dmom.columns)))
     dpeso = wb.sheets('peso').range('a1').options(pd.DataFrame, expand='table').value
-    dpeso.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), dpeso.columns))
+    dpeso.columns = pd.to_datetime(list(map(lambda x: pd.to_datetime(x), dpeso.columns)))
     ddobs = {'mom': dmom, 'peso': dpeso}
     if not (d in dmom.columns):
         att = 0
         while (True and (att <= 10)):
             try:
                 ddfs = _fetch_ipca(dat)
-                print "New Data ({}) is available".format(dat)
+                print("New Data ({}) is available".format(dat))
             except:
                 att += 1
-                print "New Data ({}) is not yet available in attempt {}".format(dat, att)
+                print("New Data ({}) is not yet available in attempt {}".format(dat, att))
                 time.sleep(0.2)
             else:
                 for info in ['mom', 'peso']:
                     df = ddobs[info]
                     dnew = ddfs[info]
-                    df.columns = pd.to_datetime(map(lambda x: pd.to_datetime(x), df.columns))
+                    df.columns = pd.to_datetime(list(map(lambda x: pd.to_datetime(x), df.columns)))
                     #df.columns = pd.to_datetime([pd.to_datetime(x) for x in df.columns])
                     df = pd.merge(ddobs[info], ddfs[info], left_index=True, right_index=True, how='outer')
                     # df.columns = pd.to_datetime(map(lambda x: str(x), df.columns), format="%Y-%m-%d")
@@ -106,4 +107,4 @@ def update_db(dat_file, dat):
                     wb.sheets(info).range('a1').value = df
                 break
     else:
-        print "data for ({}) is already in the database".format(d)
+        print("data for ({}) is already in the database".format(d))

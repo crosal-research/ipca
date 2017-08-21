@@ -76,7 +76,7 @@ def _monitored_weights(dipca, dat):
 
 
 def _ipca(dipca, dat):
-    return dipca['mom'].loc[dat, 7169]
+    return dipca['mom'].loc[dat, float(7169)]
 
 
 # Functions to export
@@ -143,13 +143,13 @@ def core_ma(dipca, dat):
     cpi['cum'] = cpi['peso'].cumsum()
     indexes = cpi[(cpi['cum'] >= 20.0) & (cpi['cum'] <= 80.0)].index
     index_inf = cpi.index.get_loc(indexes[0])-1
-    diff_inf = 20 - cpi.iloc[index_inf]['cum'] 
+    diff_inf = 20 - cpi.iloc[index_inf]['cum']
     index_sup = cpi.index.get_loc(indexes[-1]) + 1
     diff_sup = 60 - (cpi.loc[indexes]['peso'].sum()  -  diff_inf)
     input_ipca.loc[dat, indexes[0]]['peso'] =  input_ipca.loc[dat, indexes[0]]['peso'] - diff_inf
     input_ipca.loc[dat, indexes[-1]]['peso'] =  input_ipca.loc[dat, indexes[-1]]['peso'] + diff_sup
     return decomp(input_ipca, indexes, dat)
-    
+
 
 def core_smooth(dipca, dat):
     global indexes, dr
@@ -250,4 +250,3 @@ def decomposition(dipca, dat):
                       index=[dat], columns=names)
     dfinal = pd.merge(df, groups(dipca, dat), left_index=True, right_index=True, how="inner")
     return dfinal
-
