@@ -3,7 +3,7 @@
 # initial data: 13/01/2017
 ######################################################################
 import pandas as pd
-import xlwings as xw
+#import xlwings as xw
 import requests
 from concurrent import futures
 import time
@@ -13,11 +13,6 @@ import time
 __all__ = ['update_db']
 
 
-#_series ={'mom': 63, 'peso': 66} #ipca
-#_table = 1419 #ipca
-
-_series ={'mom': 355, 'peso': 357} #ipca-15
-_table = 1705  #ipca-15
 
 def _parse_data(resp):
     '''
@@ -37,7 +32,7 @@ def _parse_data(resp):
     return df_new
 
 
-def _fetch_ipca(period):
+def _fetch_ipca(period,_series, _table):
     """
     Hellp function. Given a period, fetches all ipca itmes mom changes and weights
     of that period.
@@ -65,19 +60,19 @@ def _fetch_ipca(period):
     return {'mom': ddfs[0], 'peso':ddfs[1]}
 
 
-def update_db(dat_file, dat):
+def update_db(wb, dat, series, table):
     """
     Given a period, fetches all ipca changes and weight of the all items
     that's not yet in the db and saves it
     input:
     -----
-    - data_file: str
+    - wb: xlwings workbook
     - info: str
     - dat: str (ex: all, 201612)
     output:
     - side effect
     """
-    wb = xw.Book(dat_file)
+    #wb = xw.Book(dat_file)
     d = pd.to_datetime(dat, format="%Y%m").strftime(format="%Y-%m-%d")
     dmom =  wb.sheets('mom').range('a1').options(pd.DataFrame, expand='table').value
     dmom.columns = pd.to_datetime(list(map(lambda x: pd.to_datetime(x), dmom.columns)))
@@ -88,7 +83,7 @@ def update_db(dat_file, dat):
         att = 0
         while (True and (att <= 10)):
             try:
-                ddfs = _fetch_ipca(dat)
+                ddfs = _fetch_ipca(dat, series, table)
                 print("New Data ({}) is available".format(dat))
             except:
                 att += 1
@@ -99,9 +94,7 @@ def update_db(dat_file, dat):
                     df = ddobs[info]
                     dnew = ddfs[info]
                     df.columns = pd.to_datetime(list(map(lambda x: pd.to_datetime(x), df.columns)))
-                    #df.columns = pd.to_datetime([pd.to_datetime(x) for x in df.columns])
                     df = pd.merge(ddobs[info], ddfs[info], left_index=True, right_index=True, how='outer')
-                    # df.columns = pd.to_datetime(map(lambda x: str(x), df.columns), format="%Y-%m-%d")
                     df.columns = pd.to_datetime([str(x) for x in df.columns], format="%Y-%m-%d")
                     df.sort_index(axis=1)
                     wb.sheets(info).range('a1').value = df

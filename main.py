@@ -6,12 +6,25 @@ import xlwings as xw
 from fetch_data import update_db
 from consolidate import consolidate
 
-wb = xw.Book('ipca.xlsx')
+cpi = "ipca"
+
+if cpi == "ipca_15":
+    series ={'mom': 355, 'peso': 357} #ipca-15
+    table = 1705  #ipca-15
+    filename = "ipca_15.xlsx"
+else:
+    series ={'mom': 63, 'peso': 66} #ipca
+    table = 1419 #ipca
+    filename = "ipca.xlsx"
+
+
+wb = xw.Book(filename)
 dates = [int(x) for x in  wb.sheets('Dates').range("a1").expand().value]
-
 # for d in dates:
-#     update_db('ipca.xlsx', d)
+#    update_db(wb, d, series, table)
 
-update_db('ipca.xlsx', dates[-1])
+# update database
+update_db(wb, dates[-1], series, table)
 
-consolidate(dates)
+#calculates cores
+consolidate(wb, dates)
