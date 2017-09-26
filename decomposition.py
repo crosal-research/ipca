@@ -17,9 +17,13 @@ __all__ = ['decomposition']
 _decompo = xw.Book('ipca.xlsx').sheets('decomposition') \
                                .range('a1').options(pd.DataFrame, expand='table',
                                                     index=False).value
-_indexes = xw.Book('ipca.xlsx').sheets('indexes') \
-                               .range('a1').options(pd.DataFrame, expand='table',
-                                                    index=False).value
+# _indexes = xw.Book('ipca.xlsx').sheets('indexes') \
+#                                .range('a1').options(pd.DataFrame, expand='table',
+#                                                     index=False).value
+_decompo1 = pd.read_excel('indexes.xlsx', sheetname='decomposition').applymap(lambda x: np.float64(x))
+
+_indexes = pd.read_excel('indexes.xlsx', sheetname='indexes').applymap(lambda x: np.float64(x))
+
 _items = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 4)]
 
 _subitems = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) > 4)]
@@ -198,7 +202,6 @@ def difusao(dipca, dat):
     ------
     - double
     """
-    global obs, di
 #    subitems = [np.round(x,0) for x in (_subitems.loc[:, 'index'].values)]
     subitems = _subitems['index'].values
     obs = dipca.loc[(dat, subitems), 'mom']

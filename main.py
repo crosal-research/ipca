@@ -6,7 +6,7 @@ import xlwings as xw
 from fetch_data import update_db
 from consolidate import consolidate
 
-cpi = "ipca"
+cpi = "ipca_15"
 
 if cpi == "ipca_15":
     series ={'mom': 355, 'peso': 357} #ipca-15
