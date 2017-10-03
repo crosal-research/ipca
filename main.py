@@ -6,7 +6,7 @@ import xlwings as xw
 from fetch_data import update_db
 from consolidate import consolidate
 
-cpi = "ipca_15"
+cpi = "ipca"
 
 if cpi == "ipca_15":
     series ={'mom': 355, 'peso': 357} #ipca-15
@@ -16,7 +16,6 @@ else:
     series ={'mom': 63, 'peso': 66} #ipca
     table = 1419 #ipca
     filename = "ipca.xlsx"
-
 
 wb = xw.Book(filename)
 dates = [int(x) for x in  wb.sheets('Dates').range("a1").expand().value]

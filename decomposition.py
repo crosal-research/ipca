@@ -14,20 +14,20 @@ import xlwings as xw
 
 __all__ = ['decomposition']
 
-_decompo = xw.Book('ipca.xlsx').sheets('decomposition') \
-                               .range('a1').options(pd.DataFrame, expand='table',
-                                                    index=False).value
+# _decompo = xw.Book('ipca.xlsx').sheets('decomposition') \
+#                                .range('a1').options(pd.DataFrame, expand='table',
+#                                                     index=False).value
 # _indexes = xw.Book('ipca.xlsx').sheets('indexes') \
 #                                .range('a1').options(pd.DataFrame, expand='table',
 #                                                     index=False).value
-_decompo1 = pd.read_excel('indexes.xlsx', sheetname='decomposition').applymap(lambda x: np.float64(x))
 
-_indexes = pd.read_excel('indexes.xlsx', sheetname='indexes').applymap(lambda x: np.float64(x))
+_decompo = pd.read_excel('indexes.xlsx', sheetname='decomposition').applymap(lambda x: np.float64(x))
+
+_indexes = pd.read_excel('indexes.xlsx', sheetname='indexes', converters={0:np.float64, 1:str})
 
 _items = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 4)]
 
 _subitems = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) > 4)]
-
 
 _groups = _indexes[_indexes.loc[:, 'product'].map(lambda x: len(x.split('.')[0]) == 1)]
 
